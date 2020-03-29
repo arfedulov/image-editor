@@ -44,10 +44,13 @@ export const drawArrow = (ctx, options) => {
 };
 
 export const createCanvas = (options) => {
-  const { width, height } = options || {};
+  const { width, height, classes = [] } = options || {};
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
+  if (classes.length) {
+    canvas.classList.add(...classes);
+  }
 
   return canvas;
 };

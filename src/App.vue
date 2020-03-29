@@ -1,5 +1,17 @@
 <template>
-  <div id="app" @paste="onPaste" tabindex="0" @keyup="onKeyUp" @mouseup="onMouseUp" @mousedown="onMouseDown" @mousemove="onMouseMove">
+  <div
+    id="app"
+    tabindex="0"
+    @paste="onPaste"
+    @keyup.c.67.ctrl.exact="copySelection"
+    @keyup.x.88.ctrl.exact="cutSelection"
+    @keyup.z.90.ctrl.exact="undo"
+    @keyup.y.89.ctrl.exact="redo"
+    @keyup.exact="onKeyUp"
+    @mouseup="onMouseUp"
+    @mousedown="onMouseDown"
+    @mousemove="onMouseMove"
+  >
     <tool-bar
       :active-tool="tool"
       :active-color="lineColor"
@@ -9,16 +21,23 @@
       @select-line-thickness="onSelectLineThickness"
     />
     <img ref="offscreenImage" class="offscreen" />
-    <div class="canvas-container">
-      <canvas ref="hiddenLayerCanvas" class="hidden-layer-canvas" :width="canvasWidth" :height="canvasHeight" />
-      <canvas ref="mainCanvas" class="main-canvas" :width="canvasWidth" :height="canvasHeight" />
-    </div>
-    <status-bar v-if="status !== ''" :value="status" />
+    <div
+      ref="canvasContainer"
+      class="canvas-container"
+      :style="canvasContainerStyle"
+    />
+    <status-bar v-if="showStatusBar" :value="statusMessage" />
   </div>
 </template>
 
 <script>
-import { TOOLS, DEFAULT_LINE_COLOR, DEFAULT_LINE_WIDTH, SELECT_COLOR, KEYBOARD_NUMBER_TO_TOOL_MAP } from '@/constants';
+import {
+  TOOLS, DEFAULT_LINE_COLOR,
+  DEFAULT_LINE_WIDTH,
+  SELECT_COLOR,
+  KEYBOARD_NUMBER_TO_TOOL_MAP,
+  DEFAULT_CANVAS_SIZE,
+} from '@/constants';
 import { drawArrow, createCanvas } from '@/utils/canvasUtils';
 import ToolBar from '@/components/ToolBar.vue';
 import StatusBar from '@/components/StatusBar.vue';
@@ -31,39 +50,90 @@ export default {
   },
   data() {
     return {
-      canvasWidth: 900,
-      canvasHeight: 600,
-
-      mainCtx: null,
-      hiddenLayerCtx: null,
-
       tool: TOOLS.PATH,
-
       mousePressed: false,
       startX: 0,
       startY: 0,
       selection: undefined,
-
       lineColor: DEFAULT_LINE_COLOR,
       lineWidth: DEFAULT_LINE_WIDTH,
-
-      status: '',
+      statusMessage: '',
+      canvasStack: [],
+      redoCanvasStack: [],
     };
   },
+  computed: {
+    showStatusBar() {
+      return this.statusMessage !== '';
+    },
+    topLayerCtx() {
+      if (this.canvasStack.length < 1) {
+        return null;
+      }
+
+      return this.canvasStack[this.canvasStack.length - 1].getContext('2d');
+    },
+    canvasWidth() {
+      return this.topLayerCtx ? this.topLayerCtx.canvas.width : DEFAULT_CANVAS_SIZE.WIDTH;
+    },
+    canvasHeight() {
+      return this.topLayerCtx ? this.topLayerCtx.canvas.height : DEFAULT_CANVAS_SIZE.HEIGHT;
+    },
+    canvasContainerStyle() {
+      return { width: `${this.canvasWidth}px`, height: `${this.canvasHeight}px` };
+    },
+  },
   mounted() {
-    this.mainCtx = this.$refs.mainCanvas.getContext('2d');
-    this.hiddenLayerCtx = this.$refs.hiddenLayerCanvas.getContext('2d');
+    this.pushCanvas(this.canvasWidth, this.canvasHeight, true);
   },
   methods: {
+    clearRedoStack() {
+      this.redoCanvasStack.forEach((canvas) => {
+        canvas.remove();
+      });
+      this.redoCanvasStack = [];
+    },
+    pushCanvas(width, height, withBackground) {
+      this.clearRedoStack();
+      const classes = [ 'canvas' ];
+
+      if (withBackground) {
+        classes.push('background-layer-canvas');
+      }
+
+      const canvas = createCanvas({
+        width,
+        height,
+        classes,
+      });
+      this.canvasStack.push(canvas);
+      this.$refs.canvasContainer.append(canvas);
+    },
+    undo() {
+      if (this.canvasStack.length < 2) {
+        return;
+      }
+      const canvas = this.canvasStack.pop();
+      canvas.hidden = true;
+      this.redoCanvasStack.push(canvas);
+    },
+    redo() {
+      const canvas = this.redoCanvasStack.pop();
+      if (canvas) {
+        canvas.hidden = false;
+        this.canvasStack.push(canvas);
+      }
+    },
     resetSelection() {
       this.selection = undefined;
     },
     resetLineStyle() {
-      this.hiddenLayerCtx.strokeStyle = this.lineColor;
-      this.hiddenLayerCtx.lineWidth = this.lineWidth;
-      this.hiddenLayerCtx.setLineDash([]);
+      this.topLayerCtx.strokeStyle = this.lineColor;
+      this.topLayerCtx.lineWidth = this.lineWidth;
+      this.topLayerCtx.setLineDash([]);
     },
     onMouseDown(event) {
+      this.pushCanvas(this.canvasWidth, this.canvasHeight);
       this.resetSelection();
       this.mousePressed = true;
       const { x, y } = this.toCanvasCoords(event.clientX, event.clientY);
@@ -73,8 +143,8 @@ export default {
       this.resetLineStyle();
 
       if (this.tool === 'path') {
-        this.hiddenLayerCtx.beginPath();
-        this.hiddenLayerCtx.moveTo(x, y);
+        this.topLayerCtx.beginPath();
+        this.topLayerCtx.moveTo(x, y);
       }
     },
     onMouseMove(event) {
@@ -82,37 +152,37 @@ export default {
         return;
       }
       const { x, y } = this.toCanvasCoords(event.clientX, event.clientY);
-      const hiddenLayerCtx = this.hiddenLayerCtx;
+      const topLayerCtx = this.topLayerCtx;
 
       const { startX, startY } = this;
 
       switch (this.tool) {
         case 'path':
-          hiddenLayerCtx.lineTo(x, y);
-          hiddenLayerCtx.stroke();
+          topLayerCtx.lineTo(x, y);
+          topLayerCtx.stroke();
           break;
         case 'line':
-          hiddenLayerCtx.clearRect(0, 0, hiddenLayerCtx.canvas.width, hiddenLayerCtx.canvas.height);
-          hiddenLayerCtx.beginPath();
-          hiddenLayerCtx.moveTo(startX, startY);
-          hiddenLayerCtx.lineTo(x, y);
-          hiddenLayerCtx.stroke();
+          topLayerCtx.clearRect(0, 0, topLayerCtx.canvas.width, topLayerCtx.canvas.height);
+          topLayerCtx.beginPath();
+          topLayerCtx.moveTo(startX, startY);
+          topLayerCtx.lineTo(x, y);
+          topLayerCtx.stroke();
           break;
         case 'rect':
-          hiddenLayerCtx.clearRect(0, 0, hiddenLayerCtx.canvas.width, hiddenLayerCtx.canvas.height);
-          hiddenLayerCtx.strokeRect(startX, startY, x - startX, y - startY);
+          topLayerCtx.clearRect(0, 0, topLayerCtx.canvas.width, topLayerCtx.canvas.height);
+          topLayerCtx.strokeRect(startX, startY, x - startX, y - startY);
           break;
         case 'select':
-          hiddenLayerCtx.setLineDash([15, 5]);
-          hiddenLayerCtx.strokeStyle = SELECT_COLOR;
-          hiddenLayerCtx.lineWidth = DEFAULT_LINE_WIDTH;
+          topLayerCtx.setLineDash([15, 5]);
+          topLayerCtx.strokeStyle = SELECT_COLOR;
+          topLayerCtx.lineWidth = DEFAULT_LINE_WIDTH;
 
-          hiddenLayerCtx.clearRect(0, 0, hiddenLayerCtx.canvas.width, hiddenLayerCtx.canvas.height);
-          hiddenLayerCtx.strokeRect(startX, startY, x - startX, y - startY);
+          topLayerCtx.clearRect(0, 0, topLayerCtx.canvas.width, topLayerCtx.canvas.height);
+          topLayerCtx.strokeRect(startX, startY, x - startX, y - startY);
           break;
         case 'arrow':
-          hiddenLayerCtx.clearRect(0, 0, hiddenLayerCtx.canvas.width, hiddenLayerCtx.canvas.height);
-          drawArrow(hiddenLayerCtx, {
+          topLayerCtx.clearRect(0, 0, topLayerCtx.canvas.width, topLayerCtx.canvas.height);
+          drawArrow(topLayerCtx, {
             x: startX, y: startY,
             dx: x, dy: y,
             color: this.lineColor,
@@ -130,46 +200,50 @@ export default {
       if (this.tool === 'select') {
         const { startX, startY } = this;
         this.selection = { x: startX, y: startY, width: x - startX, height: y - startY };
+      }
+    },
+    copySelection() {
+      const selection = this.selection;
+      if (!selection) {
         return;
       }
-
-      const {
-        mainCtx,
-        hiddenLayerCtx,
-      } = this;
-
-      mainCtx.drawImage(hiddenLayerCtx.canvas, 0, 0);
-      hiddenLayerCtx.clearRect(0, 0, hiddenLayerCtx.canvas.width, hiddenLayerCtx.canvas.height);
-    },
-    onKeyUp(event) {
-      if ((event.code === 'KeyX' || event.code === 'KeyC') && event.ctrlKey) {
-        const selection = this.selection;
-        if (!selection) {
+      const utilityCanvas = createCanvas({
+        width: selection.width,
+        height: selection.height,
+      });
+      this.canvasStack.forEach((layer, index) => {
+        if (index === this.canvasStack.length - 1) {
+          // do not draw selection rect
           return;
         }
-        const canvas = createCanvas({
-          width: selection.width,
-          height: selection.height,
-        });
-        canvas.getContext('2d').drawImage(
-          this.$refs.mainCanvas,
+        utilityCanvas.getContext('2d').drawImage(
+          layer,
           selection.x, selection.y, selection.width, selection.height,
           0, 0, selection.width, selection.height,
         );
-        canvas.toBlob((blob) => {
-          // eslint-disable-next-line no-undef
-          const item = new ClipboardItem({ [blob.type]: blob });
-          navigator.clipboard.write([item])
-            .then(() => this.onCopy());
-        }, 'image/png', 1);
-
-        if (event.code === 'KeyX') {
-          this.mainCtx.clearRect(selection.x, selection.y, selection.width, selection.height);
-          this.hiddenLayerCtx.clearRect(0, 0, this.hiddenLayerCtx.canvas.width, this.hiddenLayerCtx.canvas.height);
-          this.resetSelection();
-        }
+      });
+      utilityCanvas.toBlob((blob) => {
+        // eslint-disable-next-line no-undef
+        const item = new ClipboardItem({ [blob.type]: blob });
+        navigator.clipboard.write([item])
+          .then(() => this.setStatusMessage('Copied to clipboard', 2));
+      }, 'image/png', 1);
+    },
+    cutSelection() {
+      const selection = this.selection;
+      if (!selection) {
+        return;
       }
 
+      this.copySelection();
+
+      this.canvasStack.forEach((canvas) => {
+        canvas.getContext('2d').clearRect(selection.x, selection.y, selection.width, selection.height);
+      });
+      this.topLayerCtx.clearRect(0, 0, this.topLayerCtx.canvas.width, this.topLayerCtx.canvas.height);
+      this.resetSelection();
+    },
+    onKeyUp(event) {
       switch (event.code) {
         case 'Digit1':
           this.tool = TOOLS[KEYBOARD_NUMBER_TO_TOOL_MAP[1]];
@@ -188,20 +262,14 @@ export default {
           break;
       }
     },
-    onCopy() {
-      this.setStatus('Copied to clipboard', 2);
-    },
-    setStatus(message, showSeconds) {
-      this.status = message;
-      window.setTimeout(() => this.status = '', showSeconds * 1000);
+    setStatusMessage(message, showSeconds) {
+      this.statusMessage = message;
+      window.setTimeout(() => {
+        this.statusMessage = '';
+      }, showSeconds * 1000);
     },
     onPaste(event) {
-      const {
-        offscreenImage,
-        hiddenLayerCanvas,
-        mainCanvas,
-      } = this.$refs;
-      const mainCtx = this.mainCtx;
+      const { offscreenImage } = this.$refs;
 
       const items = (event.clipboardData || event.originalEvent.clipboardData).items;
       for (const item of items) {
@@ -210,12 +278,10 @@ export default {
           const url = URL.createObjectURL(blob);
 
           offscreenImage.onload = () => {
-            mainCanvas.width = offscreenImage.width;
-            mainCanvas.height = offscreenImage.height;
-            hiddenLayerCanvas.width = offscreenImage.width;
-            hiddenLayerCanvas.height = offscreenImage.height;
+            this.pushCanvas(offscreenImage.width, offscreenImage.height);
+            this.topLayerCtx.canvas.classList.add('background-layer-canvas');
 
-            mainCtx.drawImage(offscreenImage, 0, 0);
+            this.topLayerCtx.drawImage(offscreenImage, 0, 0);
             URL.revokeObjectURL(url);
           };
 
@@ -225,7 +291,7 @@ export default {
       }
     },
     toCanvasCoords(globalX, globalY) {
-      const { x, y } = this.$refs.mainCanvas.getBoundingClientRect();
+      const { x, y } = this.$refs.canvasContainer.getBoundingClientRect();
       return { x: globalX - x, y: globalY - y };
     },
     onSelectTool(tool) {
@@ -269,16 +335,17 @@ html, body {
 
 .canvas-container {
   position: relative;
+  overflow: hidden;
 }
 
-.main-canvas {
-  background-color: $color-foreground;
-}
-
-.hidden-layer-canvas {
+.canvas {
   position: absolute;
   left: 0;
   top: 0;
   background-color: transparent;
+}
+
+.canvas.background-layer-canvas {
+  background-color: $color-foreground;
 }
 </style>

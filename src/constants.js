@@ -27,3 +27,8 @@ export const COLORS = [
 ];
 
 export const DEFAULT_LINE_COLOR = COLORS[0];
+
+export const DEFAULT_CANVAS_SIZE = {
+  WIDTH: 900,
+  HEIGHT: 600,
+};
