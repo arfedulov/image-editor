@@ -109,6 +109,13 @@ export default {
       this.canvasStack.push(canvas);
       this.$refs.canvasContainer.append(canvas);
     },
+    popCanvas() {
+      if (this.canvasStack.length < 2) {
+        return;
+      }
+      const canvas = this.canvasStack.pop();
+      canvas.remove();
+    },
     undo() {
       if (this.canvasStack.length < 2) {
         return;
@@ -125,7 +132,10 @@ export default {
       }
     },
     resetSelection() {
-      this.selection = undefined;
+      if (this.selection) {
+        this.selection = undefined;
+        this.popCanvas();
+      }
     },
     resetLineStyle() {
       this.topLayerCtx.strokeStyle = this.lineColor;
