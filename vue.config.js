@@ -1,7 +1,4 @@
 module.exports = {
-  publicPath: process.env.NODE_ENV === 'production'
-    ? '/edit/'
-    : '/',
   pwa: {
     manifestOptions: {
       icons: [{"src":"./favicon.png","sizes":"16x16","type":"image/png"}]
