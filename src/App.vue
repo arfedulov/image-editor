@@ -19,6 +19,7 @@
       @select-tool="onSelectTool"
       @select-color="onSelectColor"
       @select-line-thickness="onSelectLineThickness"
+      @download="onDownload"
     />
     <img ref="offscreenImage" class="offscreen" />
     <div
@@ -84,6 +85,12 @@ export default {
     },
   },
   mounted() {
+    window.addEventListener('keyup', (event) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'S') {
+        this.onDownload();
+      }
+    });
+
     this.pushCanvas(this.canvasWidth, this.canvasHeight, true);
   },
   methods: {
@@ -299,6 +306,23 @@ export default {
           break;
         }
       }
+    },
+    onDownload() {
+      const canvas = createCanvas({
+        width: this.topLayerCtx.canvas.width,
+        height: this.topLayerCtx.canvas.height,
+      });
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      this.canvasStack.forEach((layer) => {
+        ctx.drawImage(layer, 0, 0);
+      });
+
+      const link = document.createElement('a');
+      link.download = 'image.png';
+      link.href = canvas.toDataURL();
+      link.click();
     },
     toCanvasCoords(globalX, globalY) {
       const { x, y } = this.$refs.canvasContainer.getBoundingClientRect();
