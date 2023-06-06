@@ -115,6 +115,7 @@ export default {
   height: 6vh;
   padding: 4px;
   display: flex;
+  gap: 0.4em;
   align-items: center;
   justify-content: space-between;
   font-size: 2vh;
