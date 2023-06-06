@@ -1,6 +1,6 @@
 <template>
   <div class="status-bar">
-    {{value}}
+    {{ value }}
   </div>
 </template>
 
@@ -10,15 +10,13 @@ export default {
   props: {
     value: {
       type: String,
-      default: '',
-    },
+      default: ''
+    }
   }
 }
 </script>
 
-<style lang="scss" scoped>
-@import '../assets/theme.scss';
-
+<style scoped>
 .status-bar {
   position: fixed;
   bottom: 0;
@@ -28,8 +26,8 @@ export default {
   font-size: 1.5vh;
   display: flex;
   align-items: center;
-  padding-left: .5vh;
+  padding-left: 0.5vh;
 
-  background-color: $color-background-secondary;
+  background-color: var(--color-background-secondary);
 }
 </style>

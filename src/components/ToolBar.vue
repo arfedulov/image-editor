@@ -5,12 +5,12 @@
         <div
           v-for="tool of tools"
           class="toolbar-button"
-          :class="{selected: activeTool === tool.name}"
+          :class="{ selected: activeTool === tool.name }"
           :key="tool.name"
           :name="tool.name"
           @click="selectTool(tool.name)"
         >
-          {{tool.keyboardKey}} {{tool.name}}
+          {{ tool.keyboardKey }} {{ tool.name }}
         </div>
       </div>
       <div class="toolbar-button-group">
@@ -18,15 +18,33 @@
           v-for="color of colors"
           :key="color"
           class="toolbar-button color-control"
-          :class="{selected: color === activeColor}"
-          :style="{backgroundColor: color}"
+          :class="{ selected: color === activeColor }"
+          :style="{ backgroundColor: color }"
           @click="selectColor(color)"
         />
       </div>
       <div class="toolbar-button-group">
-        <div class="toolbar-button" :class="{selected: lineThickness === 1}" @click="selectLineThickness(1)">1.0x</div>
-        <div class="toolbar-button" :class="{selected: lineThickness === 2.5}" @click="selectLineThickness(2.5)">2.5x</div>
-        <div class="toolbar-button" :class="{selected: lineThickness === 5}" @click="selectLineThickness(5)">5.0x</div>
+        <div
+          class="toolbar-button"
+          :class="{ selected: lineThickness === 1 }"
+          @click="selectLineThickness(1)"
+        >
+          1.0x
+        </div>
+        <div
+          class="toolbar-button"
+          :class="{ selected: lineThickness === 2.5 }"
+          @click="selectLineThickness(2.5)"
+        >
+          2.5x
+        </div>
+        <div
+          class="toolbar-button"
+          :class="{ selected: lineThickness === 5 }"
+          @click="selectLineThickness(5)"
+        >
+          5.0x
+        </div>
       </div>
       <div class="toolbar-button-group">
         <button class="toolbar-button" @click="$emit('download')">Download</button>
@@ -39,60 +57,59 @@
 </template>
 
 <script>
-import { TOOLS, TOOL_TO_KEYBOARD_NUMBER_MAP, COLORS } from '@/constants';
+import { TOOLS, TOOL_TO_KEYBOARD_NUMBER_MAP, COLORS } from '@/constants'
 
 export default {
   name: 'ToolBar',
   props: {
     activeTool: {
       type: String,
-      required: true,
+      required: true
     },
     activeColor: {
       type: String,
-      required: true,
+      required: true
     },
     lineThickness: {
       type: Number,
-      required: true,
-    },
+      required: true
+    }
   },
   computed: {
     tools() {
-      const tools = [];
+      const tools = []
       Object.keys(TOOLS).forEach((toolKey) => {
-        tools.push({ name: TOOLS[toolKey], keyboardKey: TOOL_TO_KEYBOARD_NUMBER_MAP[toolKey] });
-      });
-      tools.sort((a, b) => a.keyboardKey - b.keyboardKey);
-      return tools;
+        tools.push({ name: TOOLS[toolKey], keyboardKey: TOOL_TO_KEYBOARD_NUMBER_MAP[toolKey] })
+      })
+      tools.sort((a, b) => a.keyboardKey - b.keyboardKey)
+      return tools
     },
     colors() {
-      return [...COLORS];
-    },
+      return [...COLORS]
+    }
   },
   methods: {
     selectTool(toolName) {
-      this.$emit('select-tool', toolName);
+      this.$emit('select-tool', toolName)
     },
     selectColor(color) {
-      this.$emit('select-color', color);
+      this.$emit('select-color', color)
     },
     selectLineThickness(value) {
-      this.$emit('select-line-thickness', value);
+      this.$emit('select-line-thickness', value)
     }
-  },
+  }
 }
 </script>
 
-<style lang="scss" scoped>
-@import '../assets/theme.scss';
+<style scoped>
 .toolbar-wrap {
   position: fixed;
   width: 100%;
   top: 0;
   left: 0;
   z-index: 10;
-  background-color: $color-background-secondary;
+  background-color: var(--color-background-secondary);
 }
 .tool-bar {
   height: 6vh;
@@ -114,7 +131,7 @@ export default {
 .toolbar-button-group {
   display: flex;
   height: 100%;
-  gap: .4em;
+  gap: 0.4em;
 }
 
 .toolbar-button {
@@ -123,24 +140,24 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: .15em solid $color-base-dark;
-  color: $color-base-dark;
-  background-color: $color-foreground;
-  border-radius: .3em;
+  border: 0.15em solid var(--color-base-dark);
+  color: var(--color-base-dark);
+  background-color: var(--color-foreground);
+  border-radius: 0.3em;
   cursor: pointer;
   white-space: nowrap;
   font-size: inherit;
   font-family: Arial, sans-serif;
 
   &.selected {
-    border-color: $color-base-dark;
-    background-color: $color-base-dark;
+    border-color: var(--color-base-dark);
+    background-color: var(--color-base-dark);
     color: $color-foreground;
   }
 }
 
 .color-control {
   width: 3em;
-  border: .3em solid transparent;
+  border: 0.3em solid transparent;
 }
 </style>
