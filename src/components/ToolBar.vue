@@ -149,12 +149,11 @@ export default {
   white-space: nowrap;
   font-size: inherit;
   font-family: Arial, sans-serif;
-
-  &.selected {
-    border-color: var(--color-base-dark);
-    background-color: var(--color-base-dark);
-    color: $color-foreground;
-  }
+}
+.toolbar-button.selected {
+  border-color: var(--color-base-dark);
+  background-color: var(--color-base-dark);
+  color: var(--color-foreground);
 }
 
 .color-control {
