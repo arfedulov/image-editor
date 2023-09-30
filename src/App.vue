@@ -39,6 +39,13 @@ import {
 import { drawArrow, createCanvas } from '@/utils/canvasUtils'
 import ToolBar from '@/components/ToolBar.vue'
 import StatusBar from '@/components/StatusBar.vue'
+import { isUnsupportedDevice } from './utils/detect'
+
+if (isUnsupportedDevice()) {
+  alert(
+    'There is a chance that you accessed this humble application from a device that is not supported. This application is designed to work with desktop devices.'
+  )
+}
 
 export default {
   name: 'App',
