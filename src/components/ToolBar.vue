@@ -10,7 +10,7 @@
           :name="tool.name"
           @click="selectTool(tool.name)"
         >
-          {{ tool.keyboardKey }} {{ tool.name }}
+          {{ tool.numKey }} {{ tool.name }}
         </div>
       </div>
       <div class="toolbar-button-group">
@@ -57,7 +57,7 @@
 </template>
 
 <script>
-import { TOOLS, TOOL_TO_KEYBOARD_NUMBER_MAP, COLORS } from '@/constants'
+import { TOOL, COLORS } from '@/constants'
 
 export default {
   name: 'ToolBar',
@@ -77,12 +77,7 @@ export default {
   },
   computed: {
     tools() {
-      const tools = []
-      Object.keys(TOOLS).forEach((toolKey) => {
-        tools.push({ name: TOOLS[toolKey], keyboardKey: TOOL_TO_KEYBOARD_NUMBER_MAP[toolKey] })
-      })
-      tools.sort((a, b) => a.keyboardKey - b.keyboardKey)
-      return tools
+      return Object.values(TOOL)
     },
     colors() {
       return [...COLORS]

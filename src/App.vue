@@ -29,11 +29,10 @@
 
 <script>
 import {
-  TOOLS,
+  TOOL,
   DEFAULT_LINE_COLOR,
   DEFAULT_LINE_WIDTH,
   SELECT_COLOR,
-  KEYBOARD_NUMBER_TO_TOOL_MAP,
   DEFAULT_CANVAS_SIZE
 } from '@/constants'
 import { drawArrow, createCanvas } from '@/utils/canvasUtils'
@@ -55,7 +54,7 @@ export default {
   },
   data() {
     return {
-      tool: TOOLS.PATH,
+      tool: TOOL.PATH.name,
       mousePressed: false,
       startX: 0,
       startY: 0,
@@ -288,19 +287,19 @@ export default {
     onKeyUp(event) {
       switch (event.code) {
         case 'Digit1':
-          this.tool = TOOLS[KEYBOARD_NUMBER_TO_TOOL_MAP[1]]
+          this.tool = TOOL.LINE.name
           break
         case 'Digit2':
-          this.tool = TOOLS[KEYBOARD_NUMBER_TO_TOOL_MAP[2]]
+          this.tool = TOOL.PATH.name
           break
         case 'Digit3':
-          this.tool = TOOLS[KEYBOARD_NUMBER_TO_TOOL_MAP[3]]
+          this.tool = TOOL.RECT.name
           break
         case 'Digit4':
-          this.tool = TOOLS[KEYBOARD_NUMBER_TO_TOOL_MAP[4]]
+          this.tool = TOOL.ARROW.name
           break
         case 'Digit5':
-          this.tool = TOOLS[KEYBOARD_NUMBER_TO_TOOL_MAP[5]]
+          this.tool = TOOL.SELECT.name
           break
       }
     },
