@@ -255,7 +255,6 @@ export default {
       })
       utilityCanvas.toBlob(
         (blob) => {
-          // eslint-disable-next-line no-undef
           const item = new ClipboardItem({ [blob.type]: blob })
           navigator.clipboard
             .write([item])
