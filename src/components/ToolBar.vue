@@ -7,7 +7,6 @@
           class="toolbar-button"
           :class="{ selected: activeTool === tool.name }"
           :key="tool.name"
-          :name="tool.name"
           @click="selectTool(tool.name)"
         >
           {{ tool.numKey }} {{ tool.name }}
